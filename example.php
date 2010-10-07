@@ -9,6 +9,7 @@ error_reporting(E_ALL);
   </head>
   <body>
 <?
+$start = microtime(true);
 /*
 	Code written by Peter Jaap Blaakmeer <peterjaap@blaakmeer.com>, October 2010
 */
@@ -45,22 +46,28 @@ foreach($projects->project as $project) {
 			// Retrieve the todo items from the list
 			$todoitems = $z->Basecamp("todoitems",$todolist->{'id'});
 			foreach($todoitems as $todoitem) {
-				echo $tab.$tab."<B>Todo item</B>: ".$todoitem->content." - synchronized!<br />";
+				echo $tab.$tab."<B>Todo item</B>: ".$todoitem->{'content'}." - synchronized!<br />";
 				// Place the found items in the todo list
-				$z->placeTaskInCheckvist($placeInChecklist,$parent_id,$todoitem->content);
+				// Make it so #1
+				$vars = get_object_vars($todoitem);
+				if((string)$vars['completed']=="false") { $completed = false; } else { $completed = true; }
+				$z->placeTaskInCheckvist($placeInChecklist,$parent_id,$todoitem->{'content'},$completed);
 				$i++;
 			}
 		}
 	}
 	echo "<br />";
+	$end = microtime(true);
+	$time = $end-$start;
 	if($i!=0) {
 		// Succes! Yippie, hoorayy, let's crack open some beers!
-		echo "All tasks have been succesfully synchronized!";
+		echo "All tasks have been succesfully synchronized and it only took me ".$time." seconds!";
 	} else {
 		// Both Basecamp and Checkvist are feeling perky.
-		echo "There was nothing to synchronize.";
+		echo "There was nothing to synchronize. I just wasted ".$time." precious seconds.";
 	}
 }
 ?>
   </body>
 </html>
+

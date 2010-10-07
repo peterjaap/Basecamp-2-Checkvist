@@ -7,6 +7,7 @@ class BC2CV {
 	private $cv_username = "emailaddress";
 	private $cv_password = "password";
 	
+	
 	/* 
 		Functions:
 		- Basecamp
@@ -27,6 +28,8 @@ class BC2CV {
 			- needs more error handling. it'll probably crash like a chimp in a banana-powered rocketship
 			
 		Changelog:
+			- v1.1 - 07-10-2010
+				- Added completed flag to sync task status
 			- v1.0 released on 07-10-2010
 	
 		Class written by Peter Jaap Blaakmeer <peterjaap@blaakmeer.com>, October 2010
@@ -93,7 +96,7 @@ class BC2CV {
 		return $tasks;
 	}
 
-	public function createTask($checklist_id,$content,$parent=null) {
+	public function createTask($checklist_id,$content,$parent=null,$completed=false) {
 		$tasks = $this->retrieveTasks($checklist_id);
 		if($this->array_find_r((string)$content,$tasks)===false) {
 			// No duplicate tasks, so create it
@@ -102,6 +105,9 @@ class BC2CV {
 				$data = 'task[content]='.urlencode($content);
 			} else {
 				$data = "task[content]=".urlencode($content)."&task[parent_id]=".urlencode($parent);
+			}
+			if($completed==true) {
+				$data .= "&task[status]=1";
 			}
 			$url = 'http://checkvist.com/checklists/'.$checklist_id.'/tasks.xml?'.$data;
 			curl_setopt($session, CURLOPT_URL, $url);
@@ -132,13 +138,13 @@ class BC2CV {
 		return $checklist_id;
 	}
 
-	public function placeTaskInCheckvist($list,$parent_id,$content) {
+	public function placeTaskInCheckvist($list,$parent_id,$content,$completed) {
 		// Retrieve checklist_id and place task in it
 		$checklist_id = $this->getChecklistId($list);
 		$content = (string)$content;
 		
 		if(isset($checklist_id)) {
-			$this->createTask($checklist_id,$content,$parent_id);
+			$this->createTask($checklist_id,$content,$parent_id,$completed);
 		}
 	}
 
