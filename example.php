@@ -1,5 +1,5 @@
 <?
-error_reporting(E_ALL);
+error_reporting(E_ALL); 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <html>

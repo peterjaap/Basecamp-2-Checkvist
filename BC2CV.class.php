@@ -1,4 +1,4 @@
-<?
+<? 
 class BC2CV {
 	private $bc_username = "username";
 	private $bc_password = "password";
