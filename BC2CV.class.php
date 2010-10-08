@@ -1,12 +1,11 @@
 <? 
 class BC2CV {
-	private $bc_username = "username";
-	private $bc_password = "password";
-	private $bc_url = 'https://yoururl.basecamphq.com/';
+	private $bc_username;
+	private $bc_password;
+	private $bc_url;
 	
-	private $cv_username = "emailaddress";
-	private $cv_password = "password";
-	
+	private $cv_username;
+	private $cv_password;
 	
 	/* 
 		Functions:
@@ -23,17 +22,29 @@ class BC2CV {
 			- Checkvist API documentation; http://checkvist.com/auth/api
 	
 		Todo:
+			- two-way syncing
 			- make exception on duplicates check for tasks with different parents
-			- add due date syncing
 			- needs more error handling. it'll probably crash like a chimp in a banana-powered rocketship
 			
 		Changelog:
+			- v1.2 - 08-10-2010 
+				- Added due-dates
+				- Moved login credentials from class to example
 			- v1.1 - 07-10-2010
 				- Added completed flag to sync task status
-			- v1.0 released on 07-10-2010
+			- v1.0 - 07-10-2010
+				- Basecamp2Checkvist released
 	
 		Class written by Peter Jaap Blaakmeer <peterjaap@blaakmeer.com>, October 2010
 	*/
+	
+	function __construct($bc_username,$bc_password,$bc_url,$cv_username,$cv_password) {
+		$this->bc_username = $bc_username;
+		$this->bc_password = $bc_password;
+		$this->bc_url = "https://".$bc_url.".basecamphq.com/";
+		$this->cv_username = $cv_username;
+		$this->cv_password = $cv_password;
+	}
 	
 	public function Basecamp($item="projects",$id=null) {
 		// General retrieval function for projects, todolists and todoitems from Basecamp
@@ -44,6 +55,8 @@ class BC2CV {
 			curl_setopt($session, CURLOPT_URL, $this->bc_url.'projects/'.$id.'/todo_lists.xml');
 		} elseif($item=="todoitems") {
 			curl_setopt($session, CURLOPT_URL, $this->bc_url.'todo_lists/'.$id.'/todo_items.xml');
+		} elseif($item=="milestones") {
+			curl_setopt($session, CURLOPT_URL, $this->bc_url.'projects/'.$id.'/milestones/list.xml');
 		}
 		curl_setopt($session, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
 		curl_setopt($session, CURLOPT_HTTPGET, 1);
@@ -96,11 +109,14 @@ class BC2CV {
 		return $tasks;
 	}
 
-	public function createTask($checklist_id,$content,$parent=null,$completed=false) {
+	public function createTask($checklist_id,$content,$parent=null,$completed=false,$duedate=false) {
 		$tasks = $this->retrieveTasks($checklist_id);
 		if($this->array_find_r((string)$content,$tasks)===false) {
 			// No duplicate tasks, so create it
 			$session = curl_init();
+			if($duedate!=false) {
+				$content .= " ".date("d/m/Y",$duedate);
+			}
 			if($parent==null) {
 				$data = 'task[content]='.urlencode($content);
 			} else {
@@ -123,6 +139,8 @@ class BC2CV {
 			return $xmlobject;
 		} else {
 			// Task already in Checkvist
+			//var_dump($this->array_find_r((string)$content,$tasks));
+			// Build check for data descrepancies to sync task statusses
 			return false;
 		}
 	}
@@ -138,13 +156,13 @@ class BC2CV {
 		return $checklist_id;
 	}
 
-	public function placeTaskInCheckvist($list,$parent_id,$content,$completed) {
+	public function placeTaskInCheckvist($list,$parent_id,$content,$completed,$dueate) {
 		// Retrieve checklist_id and place task in it
 		$checklist_id = $this->getChecklistId($list);
 		$content = (string)$content;
 		
 		if(isset($checklist_id)) {
-			$this->createTask($checklist_id,$content,$parent_id,$completed);
+			$this->createTask($checklist_id,$content,$parent_id,$completed,$dueate);
 		}
 	}
 

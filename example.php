@@ -17,9 +17,9 @@ $start = microtime(true);
 // Include Basecamp2Checkvist class
 require_once("BC2CV.class.php");
 // Make new object
-$z = new BC2CV();
+$z = new BC2CV("bc_username","bc_password","bc_url","cv_username","cv_password");
 // Define in which list you want to put the tasks
-$placeInChecklist = "BWD";
+$placeInChecklist = "name_of_your_list";
 // Retrieve all projects
 $projects = $z->Basecamp();
 // Define tab for aesthetic purposes
@@ -40,18 +40,37 @@ foreach($projects->project as $project) {
 		$parent_id = $z->createTask($checklist_id,$todolist->{'name'});
 		// Check whether the task already exists
 		$i=0;
+		$todolist_vars = get_object_vars($todolist);
+		// Retrieve milestones
+		$milestones = $z->Basecamp("milestones",$project->{'id'});
+		// Check if there is a milestone set for the entire project
+		if(isset($todolist_vars['milestone-id']) AND !empty($todolist_vars['milestone-id'])) {
+			// Find the corresponding milestone and its duedate
+			foreach($milestones as $milestone) {
+				if($milestone->{'id'}==$todolist_vars['milestone-id']) {
+					$duedate = strtotime($milestone->{'deadline'});
+				}
+			}
+		}
+		
 		if($parent_id!==false) {
 			// Get parent_id from XML element
 			$parent_id = $parent_id->{'id'};
 			// Retrieve the todo items from the list
 			$todoitems = $z->Basecamp("todoitems",$todolist->{'id'});
 			foreach($todoitems as $todoitem) {
+				//print_r($todoitem->{'due-at'}); //     [due-at] => 2010-10-06T22:00:00Z
 				echo $tab.$tab."<B>Todo item</B>: ".$todoitem->{'content'}." - synchronized!<br />";
+				// Check if the todo item itself has a duedate. If so; use that one.
+				$vars = get_object_vars($todoitem);
+				if(isset($vars['due-at']) AND !is_object($vars['due-at'])) {
+					$duedate = strtotime("+1 day ",strtotime(substr($vars['due-at'],0,10)));
+				}
+				if(!is_numeric($duedate)) { $duedate = false; }
+				if((string)$vars['completed']=="false") { $completed = false; } else { $completed = true; }
 				// Place the found items in the todo list
 				// Make it so #1
-				$vars = get_object_vars($todoitem);
-				if((string)$vars['completed']=="false") { $completed = false; } else { $completed = true; }
-				$z->placeTaskInCheckvist($placeInChecklist,$parent_id,$todoitem->{'content'},$completed);
+				$z->placeTaskInCheckvist($placeInChecklist,$parent_id,$todoitem->{'content'},$completed,$duedate);
 				$i++;
 			}
 		}
